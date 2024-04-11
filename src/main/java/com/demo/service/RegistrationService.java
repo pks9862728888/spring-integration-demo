@@ -15,12 +15,16 @@ import com.demo.database.TicketTypeRepository;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.integration.annotation.ServiceActivator;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -47,11 +51,12 @@ public class RegistrationService {
         this.ticketTypeRepository = ticketTypeRepository;
     }
 
-    public void register(AttendeeRegistration registration) {
+    @ServiceActivator(inputChannel = "registrationRequest")
+    public void register(@Header("dateTime") OffsetDateTime messageSentTime,
+                         @Payload AttendeeRegistration registration) {
         LOG.debug("Registration received for: {}", registration.getEmail());
-
         Attendee attendee = createAttendee(registration);
-        TicketPrice ticketPrice = getTicketPrice(registration);
+        TicketPrice ticketPrice = getTicketPrice(messageSentTime, registration);
         Optional<DiscountCode> discountCode = discountCodeRepository.findByCode(registration.getDiscountCode());
 
         AttendeeTicket attendeeTicket = new AttendeeTicket();
@@ -59,7 +64,8 @@ public class RegistrationService {
         attendeeTicket.setAttendee(attendee);
         attendeeTicket.setTicketPrice(ticketPrice);
         attendeeTicket.setDiscountCode(discountCode.orElse(null));
-        attendeeTicket.setNetPrice(ticketPrice.getBasePrice().subtract(discountCode.map(DiscountCode::getAmount).orElse(BigDecimal.ZERO)));
+        attendeeTicket.setNetPrice(ticketPrice.getBasePrice()
+                .subtract(discountCode.map(DiscountCode::getAmount).orElse(BigDecimal.ZERO)));
 
         attendeeTicketRepository.save(attendeeTicket);
         LOG.debug("Registration saved, ticket code: {}", attendeeTicket.getTicketCode());
@@ -76,11 +82,11 @@ public class RegistrationService {
         return attendee;
     }
 
-    private TicketPrice getTicketPrice(AttendeeRegistration registration) {
+    private TicketPrice getTicketPrice(OffsetDateTime msgSentTime, AttendeeRegistration registration) {
         TicketType ticketType = ticketTypeRepository.findByCode(registration.getTicketType())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid ticket type: " + registration.getTicketType()));
 
-        PricingCategory pricingCategory = pricingCategoryRepository.findByDate(LocalDate.now())
+        PricingCategory pricingCategory = pricingCategoryRepository.findByDate(msgSentTime.toLocalDate())
                 .or(() -> pricingCategoryRepository.findByCode("L"))
                 .orElseThrow(() -> new EntityNotFoundException("Cannot determine pricing category"));
 
