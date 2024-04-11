@@ -51,7 +51,7 @@ public class RegistrationService {
         this.ticketTypeRepository = ticketTypeRepository;
     }
 
-    @ServiceActivator(inputChannel = "registrationRequest")
+//    @ServiceActivator(inputChannel = "registrationRequest")
     public void register(@Header("dateTime") OffsetDateTime messageSentTime,
                          @Payload AttendeeRegistration registration) {
         LOG.debug("Registration received for: {}", registration.getEmail());
