@@ -21,6 +21,7 @@ import java.time.OffsetDateTime;
 @RequestMapping("/")
 public class RegistrationController {
     private static final Logger LOG = LoggerFactory.getLogger(RegistrationController.class);
+
     private final MessageChannel registrationRequestChannel;
 
     public RegistrationController(@Qualifier("registrationRequest") MessageChannel registrationRequestChannel) {
@@ -38,10 +39,14 @@ public class RegistrationController {
             LOG.warn("Validation failed: {}", bindingResult);
             return "index";
         }
+
         Message<AttendeeRegistration> message = MessageBuilder.withPayload(registration)
                 .setHeader("dateTime", OffsetDateTime.now())
                 .build();
+
         registrationRequestChannel.send(message);
+        LOG.debug("Message sent to registration request channel");
+
         return "success";
     }
 }

@@ -5,10 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ImportResource;
 
 @SpringBootApplication
-//@ImportResource("classpath:/integration-config.xml")
-public class GlobomanticsRegistrationApplication {
+@ImportResource("classpath:/service-integration-config.xml")
+public class GlobomanticsServiceApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(GlobomanticsRegistrationApplication.class, args);
+        SpringApplication.run(GlobomanticsServiceApplication.class, args);
     }
 }
