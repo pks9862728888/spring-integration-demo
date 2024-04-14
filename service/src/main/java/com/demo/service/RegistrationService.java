@@ -31,7 +31,6 @@ import java.util.UUID;
 @Transactional
 public class RegistrationService {
     private static final Logger LOG = LoggerFactory.getLogger(RegistrationService.class);
-
     private final AttendeeTicketRepository attendeeTicketRepository;
     private final DiscountCodeRepository discountCodeRepository;
     private final PricingCategoryRepository pricingCategoryRepository;
@@ -50,20 +49,19 @@ public class RegistrationService {
         this.ticketTypeRepository = ticketTypeRepository;
     }
 
-    public void register(@Header("dateTime") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime dateTime, @Payload AttendeeRegistration registration) {
+    public void register(@Header("dateTime") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) OffsetDateTime dateTime,
+                         @Payload AttendeeRegistration registration) {
         LOG.debug("Registration received at: {} for: {}", dateTime, registration.getEmail());
-
         Attendee attendee = createAttendee(registration);
         TicketPrice ticketPrice = getTicketPrice(dateTime, registration);
         Optional<DiscountCode> discountCode = discountCodeRepository.findByCode(registration.getDiscountCode());
-
         AttendeeTicket attendeeTicket = new AttendeeTicket();
         attendeeTicket.setTicketCode(UUID.randomUUID().toString());
         attendeeTicket.setAttendee(attendee);
         attendeeTicket.setTicketPrice(ticketPrice);
         attendeeTicket.setDiscountCode(discountCode.orElse(null));
-        attendeeTicket.setNetPrice(ticketPrice.getBasePrice().subtract(discountCode.map(DiscountCode::getAmount).orElse(BigDecimal.ZERO)));
-
+        attendeeTicket.setNetPrice(ticketPrice.getBasePrice()
+                .subtract(discountCode.map(DiscountCode::getAmount).orElse(BigDecimal.ZERO)));
         attendeeTicketRepository.save(attendeeTicket);
         LOG.debug("Registration saved, ticket code: {}", attendeeTicket.getTicketCode());
     }

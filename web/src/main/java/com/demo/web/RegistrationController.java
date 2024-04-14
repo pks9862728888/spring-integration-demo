@@ -39,14 +39,11 @@ public class RegistrationController {
             LOG.warn("Validation failed: {}", bindingResult);
             return "index";
         }
-
         Message<AttendeeRegistration> message = MessageBuilder.withPayload(registration)
                 .setHeader("dateTime", OffsetDateTime.now())
                 .build();
-
         registrationRequestChannel.send(message);
         LOG.debug("Message sent to registration request channel");
-
         return "success";
     }
 }
